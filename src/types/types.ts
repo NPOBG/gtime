@@ -24,7 +24,6 @@ export interface UserDosageData {
   totalConsumed: number;
   lastDosage: Dosage | null;
   safeTimeReached: boolean;
-  hourWarningReached: boolean; // Flag for 1-hour warning
 }
 
 export interface DosageContextType {
@@ -38,5 +37,4 @@ export interface DosageContextType {
   timeRemaining: number; // in milliseconds
   riskLevel: RiskLevel;
   totalConsumed: number; // in ml
-  hourWarningReached: boolean; // Flag for 1-hour warning
 }

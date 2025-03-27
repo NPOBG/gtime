@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Dosage, AppSettings, RiskLevel, DosageContextType, UserDosageData } from '../types/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +19,6 @@ const DosageContext = createContext<DosageContextType | undefined>(undefined);
 
 // Sounds for notifications
 const notificationSound = new Audio('/notification.mp3');
-const hourWarningSound = new Audio('/hour-warning.mp3');
 const unsafeTimeSound = new Audio('/unsafe-time.mp3');
 
 export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -61,8 +61,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           riskLevel: 'safe',
           totalConsumed: 0,
           lastDosage: null,
-          safeTimeReached: false,
-          hourWarningReached: false
+          safeTimeReached: false
         }
       }));
     }
@@ -76,8 +75,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     riskLevel: 'safe',
     totalConsumed: 0,
     lastDosage: null,
-    safeTimeReached: false,
-    hourWarningReached: false
+    safeTimeReached: false
   };
 
   // Save data to localStorage when it changes
@@ -96,8 +94,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activeSession: false,
         timeRemaining: 0,
         riskLevel: 'safe',
-        lastDosage: null,
-        hourWarningReached: false
+        lastDosage: null
       });
       return;
     }
@@ -117,7 +114,6 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const elapsed = now - newest.timestamp;
       const safeTime = settings.safeInterval * 60 * 1000; // convert to ms
       const warningTime = settings.warningInterval * 60 * 1000; // convert to ms
-      const oneHour = 60 * 60 * 1000; // 1 hour in ms
       
       // Calculate time remaining until safe window
       const remaining = Math.max(0, safeTime - elapsed);
@@ -163,18 +159,6 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newRiskLevel = 'danger';
       }
       
-      // Check if 1 hour has passed and play sound if it just reached that point
-      const hourMark = elapsed >= oneHour;
-      if (hourMark && !currentUserData.hourWarningReached && settings.soundEnabled) {
-        hourWarningSound.play().catch(e => console.error('Failed to play hour warning sound', e));
-        updateUserData({ hourWarningReached: true });
-        toast({
-          title: "1-Hour Warning",
-          description: "It's been 1 hour since your last dose. Consider taking with cotton or wait for safe interval.",
-          variant: "destructive",
-        });
-      }
-      
       // Play stronger sound when risk level changes from warning to danger
       if (previousRiskLevel === 'warning' && newRiskLevel === 'danger' && settings.soundEnabled) {
         unsafeTimeSound.play().catch(e => console.error('Failed to play unsafe time sound', e));
@@ -188,8 +172,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updateUserData({
         timeRemaining: remaining,
         riskLevel: newRiskLevel,
-        totalConsumed: total,
-        hourWarningReached: hourMark
+        totalConsumed: total
       });
     };
 
@@ -206,8 +189,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (currentUserData.dosages.length > 0 && currentUserData.timeRemaining > 0) {
       updateUserData({ 
-        safeTimeReached: false,
-        hourWarningReached: false 
+        safeTimeReached: false
       });
     }
   }, [currentUser.id, currentUserData.dosages, currentUserData.timeRemaining]);
@@ -245,8 +227,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       riskLevel: 'safe',
       totalConsumed: 0,
       lastDosage: null,
-      safeTimeReached: false,
-      hourWarningReached: false
+      safeTimeReached: false
     });
   };
 
@@ -268,8 +249,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastDosage: currentUserData.lastDosage,
     timeRemaining: currentUserData.timeRemaining || 0,
     riskLevel: currentUserData.riskLevel || 'safe',
-    totalConsumed: currentUserData.totalConsumed || 0,
-    hourWarningReached: currentUserData.hourWarningReached || false
+    totalConsumed: currentUserData.totalConsumed || 0
   };
 
   return (

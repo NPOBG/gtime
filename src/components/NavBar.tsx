@@ -3,14 +3,13 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDosage } from '@/contexts/DosageContext';
 import { Button } from '@/components/ui/button';
-import { Settings, Clock, AlertTriangle } from 'lucide-react';
+import { Settings, Clock } from 'lucide-react';
 
 const NavBar: React.FC = () => {
   const location = useLocation();
   const {
     resetSession,
-    activeSession,
-    hourWarningReached
+    activeSession
   } = useDosage();
   
   return <div className="sticky top-0 z-10 w-full glass-panel border-b border-border/40 backdrop-blur-lg">
@@ -20,12 +19,6 @@ const NavBar: React.FC = () => {
             <Clock className="w-6 h-6 mr-2 text-primary" />
             <span className="font-semibold text-lg">G-time</span>
           </Link>
-          {hourWarningReached && (
-            <div className="ml-4 flex items-center">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 mr-1" />
-              <span className="text-xs text-yellow-500 font-medium">1-Hour Warning Active</span>
-            </div>
-          )}
         </div>
         
         <div className="flex items-center gap-3">
