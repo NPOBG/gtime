@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
 import { useUser } from '@/contexts/UserContext';
@@ -17,7 +16,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RiskLevel } from '@/types/types';
-import { AlertTriangle, Check, Timer, Clock, InfoIcon } from 'lucide-react';
+import { AlertTriangle, Check, Timer, Clock, InfoIcon, Clock10 } from 'lucide-react';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
+import { format } from 'date-fns';
 
 const DosageButton: React.FC = () => {
   const { 
@@ -38,6 +40,8 @@ const DosageButton: React.FC = () => {
   const [dosageNote, setDosageNote] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showHourWarning, setShowHourWarning] = useState(false);
+  const [useCustomTime, setUseCustomTime] = useState(false);
+  const [customTime, setCustomTime] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
 
   // Update the time elapsed since last dosage
   useEffect(() => {
@@ -73,9 +77,20 @@ const DosageButton: React.FC = () => {
   };
 
   const handleConfirmDosage = () => {
-    addDosage(parseFloat(dosageAmount) || settings.defaultDosage, dosageNote);
+    const amount = parseFloat(dosageAmount) || settings.defaultDosage;
+    
+    if (useCustomTime) {
+      const customTimestamp = new Date(customTime).getTime();
+      addDosage(amount, dosageNote, customTimestamp);
+    } else {
+      addDosage(amount, dosageNote);
+    }
+    
+    // Reset form values
     setDosageAmount(settings.defaultDosage.toString());
     setDosageNote('');
+    setUseCustomTime(false);
+    setCustomTime(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
     setIsDialogOpen(false);
   };
 
@@ -279,6 +294,35 @@ const DosageButton: React.FC = () => {
                 </p>
               )}
             </div>
+            
+            <div className="flex items-center space-x-2 py-2">
+              <Switch 
+                id="custom-time-switch"
+                checked={useCustomTime}
+                onCheckedChange={setUseCustomTime}
+              />
+              <Label htmlFor="custom-time-switch" className="cursor-pointer flex items-center">
+                <Clock10 className="w-4 h-4 mr-2" />
+                Use custom time
+              </Label>
+            </div>
+            
+            {useCustomTime && (
+              <div className="grid gap-2">
+                <Label htmlFor="custom-time">Custom Time</Label>
+                <Input
+                  id="custom-time"
+                  type="datetime-local"
+                  value={customTime}
+                  onChange={(e) => setCustomTime(e.target.value)}
+                  max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use this to log a dose that was taken earlier but not tracked
+                </p>
+              </div>
+            )}
             
             <div className="grid gap-2">
               <Label htmlFor="dosage-note">Notes (optional)</Label>

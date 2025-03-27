@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Dosage, AppSettings, RiskLevel, DosageContextType, UserDosageData } from '../types/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -224,10 +225,10 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Add a new dosage for the current user
-  const addDosage = (amount: number, note?: string) => {
+  const addDosage = (amount: number, note?: string, customTimestamp?: number) => {
     const newDosage: Dosage = {
       id: uuidv4(),
-      timestamp: Date.now(),
+      timestamp: customTimestamp || Date.now(),
       amount,
       note,
     };
