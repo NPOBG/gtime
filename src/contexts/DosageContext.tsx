@@ -16,8 +16,9 @@ const defaultSettings: AppSettings = {
 // Create context
 const DosageContext = createContext<DosageContextType | undefined>(undefined);
 
-// Sound for notification
+// Sounds for notifications
 const notificationSound = new Audio('/notification.mp3');
+const hourWarningSound = new Audio('/hour-warning.mp3');
 
 export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useUser();
@@ -59,7 +60,8 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           riskLevel: 'safe',
           totalConsumed: 0,
           lastDosage: null,
-          safeTimeReached: false
+          safeTimeReached: false,
+          hourWarningReached: false
         }
       }));
     }
@@ -73,7 +75,8 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     riskLevel: 'safe',
     totalConsumed: 0,
     lastDosage: null,
-    safeTimeReached: false
+    safeTimeReached: false,
+    hourWarningReached: false
   };
 
   // Save data to localStorage when it changes
@@ -92,7 +95,8 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         activeSession: false,
         timeRemaining: 0,
         riskLevel: 'safe',
-        lastDosage: null
+        lastDosage: null,
+        hourWarningReached: false
       });
       return;
     }
@@ -112,6 +116,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const elapsed = now - newest.timestamp;
       const safeTime = settings.safeInterval * 60 * 1000; // convert to ms
       const warningTime = settings.warningInterval * 60 * 1000; // convert to ms
+      const oneHour = 60 * 60 * 1000; // 1 hour in ms
       
       // Calculate time remaining until safe window
       const remaining = Math.max(0, safeTime - elapsed);
@@ -143,10 +148,18 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newRiskLevel = 'danger';
       }
       
+      // Check if 1 hour has passed and play sound if it just reached that point
+      const hourMark = elapsed >= oneHour;
+      if (hourMark && !currentUserData.hourWarningReached && settings.soundEnabled) {
+        hourWarningSound.play().catch(e => console.error('Failed to play hour warning sound', e));
+        updateUserData({ hourWarningReached: true });
+      }
+      
       updateUserData({
         timeRemaining: remaining,
         riskLevel: newRiskLevel,
-        totalConsumed: total
+        totalConsumed: total,
+        hourWarningReached: hourMark
       });
     };
 
@@ -162,7 +175,10 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Reset safe time reached flag when new dosage is added
   useEffect(() => {
     if (currentUserData.dosages.length > 0 && currentUserData.timeRemaining > 0) {
-      updateUserData({ safeTimeReached: false });
+      updateUserData({ 
+        safeTimeReached: false,
+        hourWarningReached: false 
+      });
     }
   }, [currentUser.id, currentUserData.dosages, currentUserData.timeRemaining]);
 
@@ -198,7 +214,9 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       timeRemaining: 0,
       riskLevel: 'safe',
       totalConsumed: 0,
-      lastDosage: null
+      lastDosage: null,
+      safeTimeReached: false,
+      hourWarningReached: false
     });
   };
 
@@ -221,6 +239,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     timeRemaining: currentUserData.timeRemaining || 0,
     riskLevel: currentUserData.riskLevel || 'safe',
     totalConsumed: currentUserData.totalConsumed || 0,
+    hourWarningReached: currentUserData.hourWarningReached || false
   };
 
   return (

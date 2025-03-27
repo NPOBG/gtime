@@ -15,8 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RiskLevel } from '@/types/types';
-import { AlertTriangle, Check, Timer, Clock } from 'lucide-react';
+import { AlertTriangle, Check, Timer, Clock, InfoIcon } from 'lucide-react';
 
 const DosageButton: React.FC = () => {
   const { 
@@ -25,7 +26,8 @@ const DosageButton: React.FC = () => {
     timeRemaining, 
     activeSession, 
     settings,
-    lastDosage 
+    lastDosage,
+    hourWarningReached
   } = useDosage();
   
   const { currentUser } = useUser();
@@ -35,6 +37,7 @@ const DosageButton: React.FC = () => {
   const [dosageAmount, setDosageAmount] = useState(settings.defaultDosage.toString());
   const [dosageNote, setDosageNote] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [showHourWarning, setShowHourWarning] = useState(false);
 
   // Update the time elapsed since last dosage
   useEffect(() => {
@@ -51,6 +54,15 @@ const DosageButton: React.FC = () => {
     const intervalId = setInterval(updateElapsedTime, 1000);
     return () => clearInterval(intervalId);
   }, [activeSession, lastDosage]);
+
+  // Show one-hour warning when appropriate
+  useEffect(() => {
+    if (hourWarningReached && !showHourWarning) {
+      setShowHourWarning(true);
+    } else if (!hourWarningReached && showHourWarning) {
+      setShowHourWarning(false);
+    }
+  }, [hourWarningReached, showHourWarning]);
 
   const handleButtonClick = () => {
     if (riskLevel === 'safe') {
@@ -70,6 +82,12 @@ const DosageButton: React.FC = () => {
   const handleOverrideDosage = () => {
     setIsWarningOpen(false);
     setIsDialogOpen(true);
+  };
+
+  // Suggest a lower dose based on last intake
+  const getSuggestedDose = () => {
+    if (!lastDosage) return settings.defaultDosage;
+    return Math.max(0.5, lastDosage.amount * 0.8).toFixed(1);
   };
 
   // Format time as HH:MM:SS
@@ -138,9 +156,35 @@ const DosageButton: React.FC = () => {
     }
   };
 
+  // Get one-hour warning message if needed
+  const getHourWarningMessage = () => {
+    if (!hourWarningReached || !lastDosage) return null;
+    
+    return (
+      <Alert className="mb-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/30">
+        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+        <AlertTitle className="text-yellow-600 dark:text-yellow-400">1-Hour Warning</AlertTitle>
+        <AlertDescription className="text-yellow-600 dark:text-yellow-400">
+          It's been over an hour since your last dose. Please consider:
+          <ul className="list-disc ml-5 mt-2 space-y-1">
+            <li>Take with cotton to moderate effects</li>
+            <li>Consider a lower dose ({getSuggestedDose()} ml recommended)</li>
+            <li>Or wait until the safe interval ({formatCountdown(timeRemaining)})</li>
+          </ul>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   return (
     <>
       <div className="w-full flex flex-col items-center justify-center py-6">
+        {showHourWarning && (
+          <div className="w-full max-w-md mb-4 animate-fade-in">
+            {getHourWarningMessage()}
+          </div>
+        )}
+        
         <div className="text-center mb-6">
           <div className="flex flex-col items-center">
             <div className="text-xl font-medium mb-2" style={{ color: currentUser.color }}>
@@ -159,7 +203,8 @@ const DosageButton: React.FC = () => {
           className={`relative w-56 h-56 rounded-full flex items-center justify-center font-semibold button-active
             ${getRiskBorderClass(riskLevel)} border-4 ${getGradientBackground(riskLevel)} ${getRiskColorClass(riskLevel)} 
             shadow-xl z-10 backdrop-blur-sm before:absolute before:inset-0 before:rounded-full 
-            before:bg-gradient-to-tr before:from-white/10 before:to-transparent before:z-0`}
+            before:bg-gradient-to-tr before:from-white/10 before:to-transparent before:z-0
+            ${hourWarningReached ? 'ring-4 ring-yellow-400 ring-opacity-70' : ''}`}
           style={{ borderColor: currentUser.color }}
         >
           {activeSession && timeRemaining > 0 && (
@@ -178,6 +223,11 @@ const DosageButton: React.FC = () => {
               <div className="absolute -inset-1 rounded-full border-2 border-safe opacity-40 animate-pulse-ring" 
                    style={{ animationDelay: '0.4s' }} />
             </>
+          )}
+
+          {/* Pulsing animation for hour warning */}
+          {hourWarningReached && (
+            <div className="absolute inset-0 rounded-full border-4 border-yellow-400 opacity-70 animate-pulse-ring" />
           )}
           
           <div className="z-10 px-4 text-center">
@@ -204,6 +254,12 @@ const DosageButton: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           
+          {hourWarningReached && (
+            <div className="mt-2 mb-2">
+              {getHourWarningMessage()}
+            </div>
+          )}
+          
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="dosage-amount">Amount (ml)</Label>
@@ -216,6 +272,12 @@ const DosageButton: React.FC = () => {
                 onChange={(e) => setDosageAmount(e.target.value)}
                 className="text-lg"
               />
+              {hourWarningReached && lastDosage && (
+                <p className="text-sm text-yellow-600 mt-1">
+                  <InfoIcon className="inline-block w-4 h-4 mr-1" />
+                  Recommended: {getSuggestedDose()} ml (lower than your last dose)
+                </p>
+              )}
             </div>
             
             <div className="grid gap-2">
@@ -255,6 +317,12 @@ const DosageButton: React.FC = () => {
                 : `It's unsafe to dose now. Please wait ${formatCountdown(timeRemaining)} for a safe window.`}
             </DialogDescription>
           </DialogHeader>
+          
+          {hourWarningReached && (
+            <div className="mt-2">
+              {getHourWarningMessage()}
+            </div>
+          )}
           
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsWarningOpen(false)} className="w-full sm:w-auto">
