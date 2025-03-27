@@ -88,7 +88,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('ghbTrackerSettings', JSON.stringify(settings));
   }, [settings]);
-
+  
   // Calculate time remaining and risk level for current user
   useEffect(() => {
     if (!currentUserData || !currentUserData.dosages || currentUserData.dosages.length === 0) {
@@ -142,10 +142,19 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (!currentUserData.safeTimeReached && settings.soundEnabled) {
           updateUserData({ safeTimeReached: true });
           notificationSound.play().catch(e => console.error('Failed to play sound', e));
-          toast({
-            title: "Safe Time Reached",
-            description: "It's now safe to take another dose if needed.",
-          });
+          
+          // If previously in danger state, show congratulatory message
+          if (previousRiskLevel === 'danger') {
+            toast({
+              title: "Congratulations! 🎉",
+              description: "You've safely waited through the entire interval. Great job staying safe!",
+            });
+          } else {
+            toast({
+              title: "Safe Time Reached",
+              description: "It's now safe to take another dose if needed.",
+            });
+          }
         }
       }
       
