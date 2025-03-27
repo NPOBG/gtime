@@ -134,11 +134,11 @@ const DosageButton: React.FC = () => {
             <Clock className="inline-block w-5 h-5 mr-1" />
             {lastDosage.amount.toFixed(1)} ML
           </div>
-          <div className="text-4xl font-mono font-bold text-white text-shadow">
+          <div className="text-4xl font-mono font-bold text-white text-shadow w-[180px] h-[48px] flex items-center justify-center">
             {formatTimeAsHHMMSS(timeElapsed)}
           </div>
           {timeRemaining > 0 && (
-            <div className="text-sm mt-3 text-white font-medium text-shadow">
+            <div className="text-sm mt-3 text-white font-medium text-shadow h-6">
               Safe in {formatCountdown(timeRemaining)}
             </div>
           )}
@@ -253,7 +253,7 @@ const DosageButton: React.FC = () => {
             <div className="absolute inset-0 rounded-full border-4 border-yellow-400 opacity-70 animate-pulse-ring" />
           )}
           
-          <div className="z-10 px-4 text-center">
+          <div className="z-10 px-4 text-center w-full">
             {getButtonLabel()}
           </div>
         </button>
