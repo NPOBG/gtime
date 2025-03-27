@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Dosage, AppSettings, RiskLevel, DosageContextType } from '../types/types';
+import { Dosage, AppSettings, RiskLevel, DosageContextType, UserDosageData } from '../types/types';
 import { v4 as uuidv4 } from 'uuid';
+import { useUser } from './UserContext';
 
 // Initial default settings
 const defaultSettings: AppSettings = {
@@ -19,7 +20,20 @@ const DosageContext = createContext<DosageContextType | undefined>(undefined);
 const notificationSound = new Audio('/notification.mp3');
 
 export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [dosages, setDosages] = useState<Dosage[]>([]);
+  const { currentUser } = useUser();
+  const [userDosageData, setUserDosageData] = useState<Record<string, UserDosageData>>(() => {
+    // Try to load user dosage data from localStorage
+    const savedUserDosageData = localStorage.getItem('ghbTrackerUserDosageData');
+    if (savedUserDosageData) {
+      try {
+        return JSON.parse(savedUserDosageData);
+      } catch (e) {
+        console.error('Failed to parse user dosage data', e);
+      }
+    }
+    return {};
+  });
+  
   const [settings, setSettings] = useState<AppSettings>(() => {
     // Try to load settings from localStorage
     const savedSettings = localStorage.getItem('ghbTrackerSettings');
@@ -32,49 +46,65 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     return defaultSettings;
   });
-  const [activeSession, setActiveSession] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [riskLevel, setRiskLevel] = useState<RiskLevel>('safe');
-  const [totalConsumed, setTotalConsumed] = useState(0);
-  const [lastDosage, setLastDosage] = useState<Dosage | null>(null);
-  const [safeTimeReached, setSafeTimeReached] = useState(false);
 
-  // Load data from localStorage on initial mount
+  // Initialize current user's dosage data if it doesn't exist
   useEffect(() => {
-    const savedDosages = localStorage.getItem('ghbTrackerDosages');
-    if (savedDosages) {
-      try {
-        setDosages(JSON.parse(savedDosages));
-      } catch (e) {
-        console.error('Failed to parse dosages', e);
-      }
+    if (!userDosageData[currentUser.id]) {
+      setUserDosageData(prev => ({
+        ...prev,
+        [currentUser.id]: {
+          dosages: [],
+          activeSession: false,
+          timeRemaining: 0,
+          riskLevel: 'safe',
+          totalConsumed: 0,
+          lastDosage: null,
+          safeTimeReached: false
+        }
+      }));
     }
-  }, []);
+  }, [currentUser.id, userDosageData]);
+
+  // Get current user's dosage data
+  const currentUserData = userDosageData[currentUser.id] || {
+    dosages: [],
+    activeSession: false,
+    timeRemaining: 0,
+    riskLevel: 'safe',
+    totalConsumed: 0,
+    lastDosage: null,
+    safeTimeReached: false
+  };
 
   // Save data to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('ghbTrackerDosages', JSON.stringify(dosages));
-  }, [dosages]);
+    localStorage.setItem('ghbTrackerUserDosageData', JSON.stringify(userDosageData));
+  }, [userDosageData]);
 
   useEffect(() => {
     localStorage.setItem('ghbTrackerSettings', JSON.stringify(settings));
   }, [settings]);
 
-  // Calculate time remaining and risk level
+  // Calculate time remaining and risk level for current user
   useEffect(() => {
-    if (dosages.length === 0) {
-      setActiveSession(false);
-      setTimeRemaining(0);
-      setRiskLevel('safe');
-      setLastDosage(null);
+    if (!currentUserData || !currentUserData.dosages || currentUserData.dosages.length === 0) {
+      updateUserData({
+        activeSession: false,
+        timeRemaining: 0,
+        riskLevel: 'safe',
+        lastDosage: null
+      });
       return;
     }
 
     // Sort dosages by timestamp (newest first)
-    const sortedDosages = [...dosages].sort((a, b) => b.timestamp - a.timestamp);
+    const sortedDosages = [...currentUserData.dosages].sort((a, b) => b.timestamp - a.timestamp);
     const newest = sortedDosages[0];
-    setLastDosage(newest);
-    setActiveSession(true);
+    
+    updateUserData({
+      lastDosage: newest,
+      activeSession: true
+    });
 
     // Calculate time elapsed since last dosage
     const updateTimeAndRisk = () => {
@@ -85,14 +115,12 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       // Calculate time remaining until safe window
       const remaining = Math.max(0, safeTime - elapsed);
-      setTimeRemaining(remaining);
 
       // Calculate total consumed in last 24 hours
       const last24Hours = now - 24 * 60 * 60 * 1000;
-      const recentDosages = dosages.filter(d => d.timestamp > last24Hours);
+      const recentDosages = currentUserData.dosages.filter(d => d.timestamp > last24Hours);
       const total = recentDosages.reduce((sum, d) => sum + d.amount, 0);
-      setTotalConsumed(total);
-
+      
       // Determine risk level
       let newRiskLevel: RiskLevel = 'safe';
       
@@ -104,8 +132,8 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newRiskLevel = 'safe';
         
         // Play sound when transitioning to safe (only once)
-        if (!safeTimeReached && settings.soundEnabled) {
-          setSafeTimeReached(true);
+        if (!currentUserData.safeTimeReached && settings.soundEnabled) {
+          updateUserData({ safeTimeReached: true });
           notificationSound.play().catch(e => console.error('Failed to play sound', e));
         }
       }
@@ -115,7 +143,11 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newRiskLevel = 'danger';
       }
       
-      setRiskLevel(newRiskLevel);
+      updateUserData({
+        timeRemaining: remaining,
+        riskLevel: newRiskLevel,
+        totalConsumed: total
+      });
     };
 
     // Initial calculation
@@ -125,16 +157,27 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const intervalId = setInterval(updateTimeAndRisk, 1000);
     
     return () => clearInterval(intervalId);
-  }, [dosages, settings]);
+  }, [currentUser.id, currentUserData.dosages, settings]);
 
   // Reset safe time reached flag when new dosage is added
   useEffect(() => {
-    if (dosages.length > 0 && timeRemaining > 0) {
-      setSafeTimeReached(false);
+    if (currentUserData.dosages.length > 0 && currentUserData.timeRemaining > 0) {
+      updateUserData({ safeTimeReached: false });
     }
-  }, [dosages, timeRemaining]);
+  }, [currentUser.id, currentUserData.dosages, currentUserData.timeRemaining]);
 
-  // Add a new dosage
+  // Helper function to update the current user's data
+  const updateUserData = (updates: Partial<UserDosageData>) => {
+    setUserDosageData(prev => ({
+      ...prev,
+      [currentUser.id]: {
+        ...prev[currentUser.id],
+        ...updates
+      }
+    }));
+  };
+
+  // Add a new dosage for the current user
   const addDosage = (amount: number, note?: string) => {
     const newDosage: Dosage = {
       id: uuidv4(),
@@ -143,17 +186,20 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       note,
     };
     
-    setDosages(prev => [newDosage, ...prev]);
+    const updatedDosages = [newDosage, ...(currentUserData.dosages || [])];
+    updateUserData({ dosages: updatedDosages });
   };
 
-  // Reset current session
+  // Reset current user's session
   const resetSession = () => {
-    setDosages([]);
-    setActiveSession(false);
-    setTimeRemaining(0);
-    setRiskLevel('safe');
-    setTotalConsumed(0);
-    setLastDosage(null);
+    updateUserData({
+      dosages: [],
+      activeSession: false,
+      timeRemaining: 0,
+      riskLevel: 'safe',
+      totalConsumed: 0,
+      lastDosage: null
+    });
   };
 
   // Update settings
@@ -165,16 +211,16 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const contextValue: DosageContextType = {
-    dosages,
+    dosages: currentUserData.dosages || [],
     settings,
     addDosage,
     resetSession,
     updateSettings,
-    activeSession,
-    lastDosage,
-    timeRemaining,
-    riskLevel,
-    totalConsumed,
+    activeSession: currentUserData.activeSession || false,
+    lastDosage: currentUserData.lastDosage,
+    timeRemaining: currentUserData.timeRemaining || 0,
+    riskLevel: currentUserData.riskLevel || 'safe',
+    totalConsumed: currentUserData.totalConsumed || 0,
   };
 
   return (

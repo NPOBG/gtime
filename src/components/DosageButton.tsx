@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
+import { useUser } from '@/contexts/UserContext';
 import { formatCountdown, getRiskBorderClass, getRiskColorClass, formatTime } from '@/utils/dosageUtils';
 import { 
   Dialog, 
@@ -25,6 +27,8 @@ const DosageButton: React.FC = () => {
     settings,
     lastDosage 
   } = useDosage();
+  
+  const { currentUser } = useUser();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isWarningOpen, setIsWarningOpen] = useState(false);
@@ -138,10 +142,15 @@ const DosageButton: React.FC = () => {
     <>
       <div className="w-full flex flex-col items-center justify-center py-6">
         <div className="text-center mb-6">
-          <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium ${getRiskClasses(riskLevel)} shadow-sm`}>
-            {riskLevel === 'safe' ? 'Safe to dose' : (
-              riskLevel === 'warning' ? 'Caution Period' : 'Unsafe Period'
-            )}
+          <div className="flex flex-col items-center">
+            <div className="text-xl font-medium mb-2" style={{ color: currentUser.color }}>
+              {currentUser.emoji} {currentUser.name}
+            </div>
+            <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium ${getRiskClasses(riskLevel)} shadow-sm`}>
+              {riskLevel === 'safe' ? 'Safe to dose' : (
+                riskLevel === 'warning' ? 'Caution Period' : 'Unsafe Period'
+              )}
+            </div>
           </div>
         </div>
         
@@ -151,6 +160,7 @@ const DosageButton: React.FC = () => {
             ${getRiskBorderClass(riskLevel)} border-4 ${getGradientBackground(riskLevel)} ${getRiskColorClass(riskLevel)} 
             shadow-xl z-10 backdrop-blur-sm before:absolute before:inset-0 before:rounded-full 
             before:bg-gradient-to-tr before:from-white/10 before:to-transparent before:z-0`}
+          style={{ borderColor: currentUser.color }}
         >
           {activeSession && timeRemaining > 0 && (
             <div className={`absolute inset-0 rounded-full ${getRiskBorderClass(riskLevel)} opacity-60`}
@@ -188,7 +198,7 @@ const DosageButton: React.FC = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="glass-panel">
           <DialogHeader>
-            <DialogTitle>Log Intake</DialogTitle>
+            <DialogTitle>Log Intake for {currentUser.name}</DialogTitle>
             <DialogDescription>
               Enter the amount and any notes about this dose.
             </DialogDescription>

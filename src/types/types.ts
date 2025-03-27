@@ -16,6 +16,16 @@ export interface AppSettings {
   maxDailyDosage: number; // in ml
 }
 
+export interface UserDosageData {
+  dosages: Dosage[];
+  activeSession: boolean;
+  timeRemaining: number;
+  riskLevel: RiskLevel;
+  totalConsumed: number;
+  lastDosage: Dosage | null;
+  safeTimeReached: boolean;
+}
+
 export interface DosageContextType {
   dosages: Dosage[];
   settings: AppSettings;
