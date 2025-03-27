@@ -78,7 +78,7 @@ const DosageButton: React.FC = () => {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Utility function to determine the button label
@@ -88,16 +88,16 @@ const DosageButton: React.FC = () => {
     // Display elapsed time in active session
     if (activeSession && lastDosage) {
       return (
-        <div className="flex flex-col items-center justify-center">
-          <div className="text-lg font-bold mb-1">
+        <div className="flex flex-col items-center justify-center w-full">
+          <div className="text-lg font-bold mb-1 text-foreground">
             <Clock className="inline-block w-5 h-5 mr-1" />
             TIMER
           </div>
-          <div className="text-3xl font-mono font-bold">
+          <div className="text-3xl font-mono font-bold text-foreground">
             {formatTimeAsHHMMSS(timeElapsed)}
           </div>
           {timeRemaining > 0 && (
-            <div className="text-xs mt-2 opacity-80">
+            <div className="text-xs mt-2 text-foreground">
               Safe in {formatCountdown(timeRemaining)}
             </div>
           )}
@@ -138,10 +138,10 @@ const DosageButton: React.FC = () => {
         <button
           onClick={handleButtonClick}
           className={`relative w-48 h-48 rounded-full flex items-center justify-center font-semibold button-active
-            ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)}`}
+            ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)} shadow-lg`}
         >
           {activeSession && timeRemaining > 0 && (
-            <div className={`absolute inset-0 rounded-full ${getRiskBorderClass(riskLevel)} opacity-40`}
+            <div className={`absolute inset-0 rounded-full ${getRiskBorderClass(riskLevel)} opacity-50`}
                  style={{
                    transform: `scale(${1 - (timeRemaining / (settings.safeInterval * 60 * 1000))})`,
                    transition: 'transform 1s linear'
@@ -152,13 +152,13 @@ const DosageButton: React.FC = () => {
           {/* Pulsing animation for safe status */}
           {riskLevel === 'safe' && (
             <>
-              <div className="absolute inset-0 rounded-full border-4 border-safe opacity-40 animate-pulse-ring" />
-              <div className="absolute -inset-1 rounded-full border-2 border-safe opacity-20 animate-pulse-ring" 
+              <div className="absolute inset-0 rounded-full border-4 border-safe opacity-60 animate-pulse-ring" />
+              <div className="absolute -inset-1 rounded-full border-2 border-safe opacity-30 animate-pulse-ring" 
                    style={{ animationDelay: '0.4s' }} />
             </>
           )}
           
-          <span className="scale-in px-3 text-center">
+          <span className="scale-in px-3 text-center z-10">
             {getButtonLabel()}
           </span>
         </button>

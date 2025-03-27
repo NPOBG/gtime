@@ -14,7 +14,9 @@ const Index: React.FC = () => {
       <NavBar />
       
       <main className="flex-1 container mx-auto px-4 py-4 flex flex-col">
-        <DosageButton />
+        <div className="mb-6">
+          <DosageButton />
+        </div>
         
         <div className="space-y-6 mb-8">
           <RiskIndicator />
