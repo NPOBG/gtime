@@ -30,7 +30,7 @@ export interface UserDosageData {
 export interface DosageContextType {
   dosages: Dosage[];
   settings: AppSettings;
-  addDosage: (amount: number, note?: string) => void;
+  addDosage: (amount: number, note?: string, minutesAgo?: number) => void;
   resetSession: () => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   activeSession: boolean;
