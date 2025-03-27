@@ -90,7 +90,7 @@ const DosageButton: React.FC = () => {
         <div className="flex flex-col items-center justify-center w-full">
           <div className="text-lg font-bold mb-2 text-white text-shadow">
             <Clock className="inline-block w-5 h-5 mr-1" />
-            TIMER
+            {lastDosage.amount.toFixed(1)} ML
           </div>
           <div className="text-4xl font-mono font-bold text-white text-shadow">
             {formatTimeAsHHMMSS(timeElapsed)}
