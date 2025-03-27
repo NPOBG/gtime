@@ -17,8 +17,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RiskLevel } from '@/types/types';
 import { AlertTriangle, Check, Timer, Clock, InfoIcon, Clock10 } from 'lucide-react';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { format } from 'date-fns';
 
 const DosageButton: React.FC = () => {
@@ -40,8 +46,8 @@ const DosageButton: React.FC = () => {
   const [dosageNote, setDosageNote] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showHourWarning, setShowHourWarning] = useState(false);
-  const [useCustomTime, setUseCustomTime] = useState(false);
-  const [customTime, setCustomTime] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [useTimeOffset, setUseTimeOffset] = useState(false);
+  const [minutesAgo, setMinutesAgo] = useState("0");
 
   // Update the time elapsed since last dosage
   useEffect(() => {
@@ -79,9 +85,8 @@ const DosageButton: React.FC = () => {
   const handleConfirmDosage = () => {
     const amount = parseFloat(dosageAmount) || settings.defaultDosage;
     
-    if (useCustomTime) {
-      const customTimestamp = new Date(customTime).getTime();
-      addDosage(amount, dosageNote, customTimestamp);
+    if (useTimeOffset && parseInt(minutesAgo) > 0) {
+      addDosage(amount, dosageNote, parseInt(minutesAgo));
     } else {
       addDosage(amount, dosageNote);
     }
@@ -89,8 +94,8 @@ const DosageButton: React.FC = () => {
     // Reset form values
     setDosageAmount(settings.defaultDosage.toString());
     setDosageNote('');
-    setUseCustomTime(false);
-    setCustomTime(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+    setUseTimeOffset(false);
+    setMinutesAgo("0");
     setIsDialogOpen(false);
   };
 
@@ -190,6 +195,9 @@ const DosageButton: React.FC = () => {
       </Alert>
     );
   };
+
+  // Predefined minutes options for the dropdown
+  const minutesOptions = [5, 10, 15, 30, 45, 60, 90, 120];
 
   return (
     <>
@@ -297,29 +305,50 @@ const DosageButton: React.FC = () => {
             
             <div className="flex items-center space-x-2 py-2">
               <Switch 
-                id="custom-time-switch"
-                checked={useCustomTime}
-                onCheckedChange={setUseCustomTime}
+                id="time-offset-switch"
+                checked={useTimeOffset}
+                onCheckedChange={setUseTimeOffset}
               />
-              <Label htmlFor="custom-time-switch" className="cursor-pointer flex items-center">
+              <Label htmlFor="time-offset-switch" className="cursor-pointer flex items-center">
                 <Clock10 className="w-4 h-4 mr-2" />
-                Use custom time
+                Taken earlier than now
               </Label>
             </div>
             
-            {useCustomTime && (
+            {useTimeOffset && (
               <div className="grid gap-2">
-                <Label htmlFor="custom-time">Custom Time</Label>
-                <Input
-                  id="custom-time"
-                  type="datetime-local"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                  className="text-sm"
-                />
+                <Label htmlFor="minutes-ago">Minutes ago</Label>
+                <div className="flex gap-3">
+                  <Select
+                    value={minutesAgo}
+                    onValueChange={setMinutesAgo}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select minutes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {minutesOptions.map((min) => (
+                        <SelectItem key={min} value={min.toString()}>
+                          {min} minutes ago
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {minutesAgo === "custom" && (
+                    <Input
+                      type="number"
+                      min="1"
+                      max="1440"
+                      placeholder="Minutes"
+                      className="w-24"
+                      onChange={(e) => setMinutesAgo(e.target.value)}
+                    />
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Use this to log a dose that was taken earlier but not tracked
+                  Select how many minutes ago you took this dose
                 </p>
               </div>
             )}
