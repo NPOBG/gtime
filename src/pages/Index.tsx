@@ -13,12 +13,12 @@ const Index: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-background">
       <NavBar />
       
-      <main className="flex-1 container mx-auto px-4 py-4 flex flex-col">
-        <div className="mb-6">
+      <main className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center">
+        <div className="w-full max-w-md mb-10">
           <DosageButton />
         </div>
         
-        <div className="space-y-6 mb-8">
+        <div className="w-full max-w-md space-y-8">
           <RiskIndicator />
           {activeSession && <DosageHistory />}
         </div>

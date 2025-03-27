@@ -87,7 +87,7 @@
 }
 
 .glass-panel {
-  @apply bg-white/80 backdrop-blur-md dark:bg-gray-900/80 shadow-lg border border-white/20 dark:border-gray-800/30;
+  @apply bg-white/90 backdrop-blur-md dark:bg-gray-900/90 shadow-lg border border-white/20 dark:border-gray-800/30;
 }
 
 .button-active {
@@ -104,4 +104,28 @@
 
 .slide-in-bottom {
   @apply opacity-0 animate-slide-in-bottom;
+}
+
+/* Add drop shadow to improve text visibility */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Add animation for the risk status pulse */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
 }
