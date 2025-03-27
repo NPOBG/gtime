@@ -1,7 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
-import { formatCountdown, getRiskBorderClass, getRiskColorClass } from '@/utils/dosageUtils';
+import { formatCountdown, getRiskBorderClass, getRiskColorClass, formatTime } from '@/utils/dosageUtils';
 import { 
   Dialog, 
   DialogContent, 
@@ -15,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RiskLevel } from '@/types/types';
-import { AlertTriangle, Check } from 'lucide-react';
+import { AlertTriangle, Check, Timer } from 'lucide-react';
 
 const DosageButton: React.FC = () => {
   const { 
@@ -23,13 +22,31 @@ const DosageButton: React.FC = () => {
     riskLevel, 
     timeRemaining, 
     activeSession, 
-    settings 
+    settings,
+    lastDosage 
   } = useDosage();
-
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [dosageAmount, setDosageAmount] = useState(settings.defaultDosage.toString());
   const [dosageNote, setDosageNote] = useState('');
+  const [timeElapsed, setTimeElapsed] = useState(0);
+
+  // Update the time elapsed since last dosage
+  useEffect(() => {
+    if (!activeSession || !lastDosage) return;
+
+    const updateElapsedTime = () => {
+      setTimeElapsed(Date.now() - lastDosage.timestamp);
+    };
+
+    // Initial update
+    updateElapsedTime();
+
+    // Update elapsed time every second
+    const intervalId = setInterval(updateElapsedTime, 1000);
+    return () => clearInterval(intervalId);
+  }, [activeSession, lastDosage]);
 
   const handleButtonClick = () => {
     if (riskLevel === 'safe') {
@@ -52,9 +69,29 @@ const DosageButton: React.FC = () => {
   };
 
   // Utility function to determine the button label
-  const getButtonLabel = (): string => {
+  const getButtonLabel = (): React.ReactNode => {
     if (!activeSession) return 'Start Session';
-    if (timeRemaining <= 0) return 'Safe to Dose';
+    
+    // Display elapsed time in active session
+    if (activeSession && lastDosage) {
+      return (
+        <div className="flex flex-col items-center justify-center">
+          <div className="text-sm mb-1 opacity-70">
+            <Timer className="inline-block w-4 h-4 mr-1" />
+            Since last dose
+          </div>
+          <div className="text-2xl font-bold">
+            {formatTime(timeElapsed)}
+          </div>
+          {timeRemaining > 0 && (
+            <div className="text-xs mt-2 opacity-80">
+              Safe in {formatCountdown(timeRemaining)}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
     return formatCountdown(timeRemaining);
   };
 
@@ -87,7 +124,7 @@ const DosageButton: React.FC = () => {
         
         <button
           onClick={handleButtonClick}
-          className={`relative w-48 h-48 rounded-full flex items-center justify-center text-2xl font-semibold button-active
+          className={`relative w-48 h-48 rounded-full flex items-center justify-center font-semibold button-active
             ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)}`}
         >
           {activeSession && timeRemaining > 0 && (
@@ -108,7 +145,7 @@ const DosageButton: React.FC = () => {
             </>
           )}
           
-          <span className="scale-in">
+          <span className="scale-in px-3 text-center">
             {getButtonLabel()}
           </span>
         </button>
