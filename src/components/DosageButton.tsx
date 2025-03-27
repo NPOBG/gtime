@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
 import { formatCountdown, getRiskBorderClass, getRiskColorClass, formatTime } from '@/utils/dosageUtils';
@@ -124,6 +123,17 @@ const DosageButton: React.FC = () => {
     }
   };
 
+  // Utility function to get gradient background based on risk level
+  const getGradientBackground = (level: RiskLevel): string => {
+    if (level === 'safe') {
+      return 'bg-gradient-to-br from-safe/30 to-green-400/40';
+    } else if (level === 'warning') {
+      return 'bg-gradient-to-br from-warning/30 to-amber-400/40';
+    } else {
+      return 'bg-gradient-to-br from-danger/30 to-red-400/40';
+    }
+  };
+
   return (
     <>
       <div className="w-full flex flex-col items-center justify-center py-6">
@@ -138,7 +148,9 @@ const DosageButton: React.FC = () => {
         <button
           onClick={handleButtonClick}
           className={`relative w-56 h-56 rounded-full flex items-center justify-center font-semibold button-active
-            ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)} shadow-xl z-10`}
+            ${getRiskBorderClass(riskLevel)} border-4 ${getGradientBackground(riskLevel)} ${getRiskColorClass(riskLevel)} 
+            shadow-xl z-10 backdrop-blur-sm before:absolute before:inset-0 before:rounded-full 
+            before:bg-gradient-to-tr before:from-white/10 before:to-transparent before:z-0`}
         >
           {activeSession && timeRemaining > 0 && (
             <div className={`absolute inset-0 rounded-full ${getRiskBorderClass(riskLevel)} opacity-60`}
