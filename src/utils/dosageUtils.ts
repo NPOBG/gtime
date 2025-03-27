@@ -118,11 +118,11 @@ export const getRiskBorderClass = (riskLevel: RiskLevel): string => {
 export const getRiskText = (riskLevel: RiskLevel): string => {
   switch (riskLevel) {
     case 'safe':
-      return 'Safe to dose';
+      return 'It`s G-time';
     case 'warning':
-      return 'Approaching safe window';
+      return 'Almost G-time. Be cautious!';
     case 'danger':
-      return 'Unsafe to dose';
+      return 'Wait more for safe G-time!';
     default:
       return '';
   }

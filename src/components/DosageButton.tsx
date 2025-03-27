@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
 import { useUser } from '@/contexts/UserContext';
@@ -63,7 +62,7 @@ const DosageButton: React.FC = () => {
     const intervalId = setInterval(updateElapsedTime, 1000);
     return () => clearInterval(intervalId);
   }, [activeSession, lastDosage]);
-
+  
   const handleButtonClick = () => {
     if (riskLevel === 'safe') {
       setIsDialogOpen(true);
@@ -103,12 +102,12 @@ const DosageButton: React.FC = () => {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Utility function to determine the button label
   const getButtonLabel = (): React.ReactNode => {
-    if (!activeSession) return 'Start G-timer';
+    if (!activeSession) return 'It`s G-time';
     
     // Display elapsed time in active session
     if (activeSession && lastDosage) {
@@ -172,8 +171,8 @@ const DosageButton: React.FC = () => {
               {currentUser.emoji} {currentUser.name}
             </div>
             <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium ${getRiskClasses(riskLevel)} shadow-sm`}>
-              {riskLevel === 'safe' ? 'Safe to dose' : (
-                riskLevel === 'warning' ? 'Caution Period' : 'Unsafe Period'
+              {riskLevel === 'safe' ? 'It`s G-time' : (
+                riskLevel === 'warning' ? 'Almost G-time. Be cautious!' : 'Wait more for safe G-time!'
               )}
             </div>
           </div>
