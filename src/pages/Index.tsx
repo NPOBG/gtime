@@ -16,7 +16,7 @@ const Index: React.FC = () => {
       <main className="flex-1 container mx-auto px-4 py-4 flex flex-col">
         <DosageButton />
         
-        <div className="space-y-4 mb-8">
+        <div className="space-y-6 mb-8">
           <RiskIndicator />
           {activeSession && <DosageHistory />}
         </div>

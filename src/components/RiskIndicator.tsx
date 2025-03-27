@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
 
 const RiskIndicator: React.FC = () => {
-  const { riskLevel, timeRemaining, activeSession, settings } = useDosage();
+  const { riskLevel, timeRemaining, activeSession, settings, lastDosage } = useDosage();
+  
+  // Calculate time elapsed since last dosage
+  const timeElapsed = lastDosage ? Date.now() - lastDosage.timestamp : 0;
 
   // Get the appropriate icon based on the risk level
   const StatusIcon = () => {
@@ -50,11 +53,13 @@ const RiskIndicator: React.FC = () => {
             </span>
           </div>
 
-          {activeSession && timeRemaining > 0 && (
+          {activeSession && (
             <div className="flex items-center space-x-1">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Next safe window in {formatTime(timeRemaining)}
+                {timeRemaining > 0 
+                  ? `Safe in ${formatTime(timeRemaining)}`
+                  : 'Safe window now'}
               </span>
             </div>
           )}
@@ -82,6 +87,20 @@ const RiskIndicator: React.FC = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            
+            {/* Time information section */}
+            <div className="flex justify-between mt-3 text-xs text-muted-foreground">
+              <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                <span>Elapsed: {formatTime(timeElapsed)}</span>
+              </div>
+              {timeRemaining > 0 && (
+                <div className="flex items-center">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  <span>Remaining: {formatTime(timeRemaining)}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
