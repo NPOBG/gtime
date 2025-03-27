@@ -89,15 +89,15 @@ const DosageButton: React.FC = () => {
     if (activeSession && lastDosage) {
       return (
         <div className="flex flex-col items-center justify-center w-full">
-          <div className="text-lg font-bold mb-2 text-white">
+          <div className="text-lg font-bold mb-2 text-white text-shadow">
             <Clock className="inline-block w-5 h-5 mr-1" />
             TIMER
           </div>
-          <div className="text-4xl font-mono font-bold text-white drop-shadow-md">
+          <div className="text-4xl font-mono font-bold text-white text-shadow">
             {formatTimeAsHHMMSS(timeElapsed)}
           </div>
           {timeRemaining > 0 && (
-            <div className="text-sm mt-3 text-white font-medium drop-shadow-sm">
+            <div className="text-sm mt-3 text-white font-medium text-shadow">
               Safe in {formatCountdown(timeRemaining)}
             </div>
           )}
@@ -138,7 +138,7 @@ const DosageButton: React.FC = () => {
         <button
           onClick={handleButtonClick}
           className={`relative w-56 h-56 rounded-full flex items-center justify-center font-semibold button-active
-            ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)} shadow-xl`}
+            ${getRiskBorderClass(riskLevel)} border-4 glass-panel ${getRiskColorClass(riskLevel)} shadow-xl z-10`}
         >
           {activeSession && timeRemaining > 0 && (
             <div className={`absolute inset-0 rounded-full ${getRiskBorderClass(riskLevel)} opacity-60`}
@@ -158,12 +158,12 @@ const DosageButton: React.FC = () => {
             </>
           )}
           
-          <span className="scale-in px-4 text-center z-10">
+          <div className="z-10 px-4 text-center">
             {getButtonLabel()}
-          </span>
+          </div>
         </button>
         
-        <div className="text-center mt-6 scale-in">
+        <div className="text-center mt-6">
           <span className="text-sm font-medium text-muted-foreground">
             {activeSession
               ? 'Tap to log a new intake'
