@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useDosage } from '@/contexts/DosageContext';
 import { formatCountdown, getRiskBorderClass, getRiskColorClass, formatTime } from '@/utils/dosageUtils';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RiskLevel } from '@/types/types';
-import { AlertTriangle, Check, Timer } from 'lucide-react';
+import { AlertTriangle, Check, Timer, Clock } from 'lucide-react';
 
 const DosageButton: React.FC = () => {
   const { 
@@ -68,6 +69,18 @@ const DosageButton: React.FC = () => {
     setIsDialogOpen(true);
   };
 
+  // Format time as HH:MM:SS
+  const formatTimeAsHHMMSS = (ms: number): string => {
+    if (ms <= 0) return "00:00:00";
+    
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   // Utility function to determine the button label
   const getButtonLabel = (): React.ReactNode => {
     if (!activeSession) return 'Start Session';
@@ -76,12 +89,12 @@ const DosageButton: React.FC = () => {
     if (activeSession && lastDosage) {
       return (
         <div className="flex flex-col items-center justify-center">
-          <div className="text-sm mb-1 opacity-70">
-            <Timer className="inline-block w-4 h-4 mr-1" />
-            Since last dose
+          <div className="text-lg font-bold mb-1">
+            <Clock className="inline-block w-5 h-5 mr-1" />
+            TIMER
           </div>
-          <div className="text-2xl font-bold">
-            {formatTime(timeElapsed)}
+          <div className="text-3xl font-mono font-bold">
+            {formatTimeAsHHMMSS(timeElapsed)}
           </div>
           {timeRemaining > 0 && (
             <div className="text-xs mt-2 opacity-80">
