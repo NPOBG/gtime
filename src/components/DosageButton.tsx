@@ -108,7 +108,7 @@ const DosageButton: React.FC = () => {
 
   // Utility function to determine the button label
   const getButtonLabel = (): React.ReactNode => {
-    if (!activeSession) return 'Start Session';
+    if (!activeSession) return 'Start G-timer';
     
     // Display elapsed time in active session
     if (activeSession && lastDosage) {
