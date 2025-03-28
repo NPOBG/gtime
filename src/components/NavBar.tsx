@@ -1,14 +1,18 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDosage } from '@/contexts/DosageContext';
 import { Button } from '@/components/ui/button';
-import { Settings, Clock } from 'lucide-react';
+import { Settings, Clock, PlusCircle } from 'lucide-react';
+
 const NavBar: React.FC = () => {
   const location = useLocation();
   const {
     resetSession,
+    startNewSession,
     activeSession
   } = useDosage();
+
   return <div className="sticky top-0 z-10 w-full glass-panel border-b border-border/40 backdrop-blur-lg">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
@@ -19,7 +23,14 @@ const NavBar: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          {activeSession && location.pathname === '/' && <Button variant="outline" size="sm" onClick={resetSession} className="text-xs">Reset Application</Button>}
+          {activeSession && location.pathname === '/' && (
+            <>
+              <Button variant="outline" size="sm" onClick={startNewSession} className="text-xs flex items-center">
+                <PlusCircle className="w-4 h-4 mr-1" /> New G-session
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetSession} className="text-xs">Reset Application</Button>
+            </>
+          )}
           
           <Link to={location.pathname === '/settings' ? '/' : '/settings'}>
             <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
@@ -30,4 +41,5 @@ const NavBar: React.FC = () => {
       </div>
     </div>;
 };
+
 export default NavBar;

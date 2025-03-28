@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Dosage, AppSettings, RiskLevel, DosageContextType, UserDosageData } from '../types/types';
+import { Dosage, AppSettings, RiskLevel, DosageContextType, UserDosageData, Session } from '../types/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from './UserContext';
 import { toast } from '@/hooks/use-toast';
@@ -61,7 +60,9 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           riskLevel: 'safe',
           totalConsumed: 0,
           lastDosage: null,
-          safeTimeReached: false
+          safeTimeReached: false,
+          sessions: [],
+          currentSession: null
         }
       }));
     }
@@ -75,7 +76,9 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     riskLevel: 'safe',
     totalConsumed: 0,
     lastDosage: null,
-    safeTimeReached: false
+    safeTimeReached: false,
+    sessions: [],
+    currentSession: null
   };
 
   // Save data to localStorage when it changes
@@ -169,6 +172,20 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
       }
       
+      // Check if 4 safe intervals have passed since last dosage
+      // If yes, automatically start a new session
+      const fourSafeIntervals = 4 * safeTime;
+      if (elapsed > fourSafeIntervals && currentUserData.currentSession) {
+        // Only auto-start new session if we haven't already done so for this elapsed time
+        if (currentUserData.currentSession.lastIntakeTimestamp === newest.timestamp) {
+          startNewSession();
+          toast({
+            title: "New Session Started",
+            description: "More than 4 safe intervals have passed since your last intake. A new session has been started.",
+          });
+        }
+      }
+      
       updateUserData({
         timeRemaining: remaining,
         riskLevel: newRiskLevel,
@@ -183,7 +200,7 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const intervalId = setInterval(updateTimeAndRisk, 1000);
     
     return () => clearInterval(intervalId);
-  }, [currentUser.id, currentUserData.dosages, settings, currentUserData.riskLevel]);
+  }, [currentUser.id, currentUserData.dosages, settings, currentUserData.riskLevel, currentUserData.currentSession]);
 
   // Reset safe time reached flag when new dosage is added
   useEffect(() => {
@@ -205,14 +222,90 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   };
 
+  // Calculate session statistics based on dosages
+  const calculateSessionStats = (dosages: Dosage[]) => {
+    if (!dosages || dosages.length === 0) return null;
+    
+    const sortedDosages = [...dosages].sort((a, b) => a.timestamp - b.timestamp);
+    const firstDosage = sortedDosages[0];
+    const lastDosage = sortedDosages[sortedDosages.length - 1];
+    
+    const firstIntakeTime = new Date(firstDosage.timestamp);
+    const lastIntakeTime = new Date(lastDosage.timestamp);
+    
+    // Duration in hours
+    const durationMs = lastIntakeTime.getTime() - firstIntakeTime.getTime();
+    const durationHours = durationMs / (1000 * 60 * 60);
+    
+    // Total ml consumed
+    const totalMl = sortedDosages.reduce((sum, d) => sum + d.amount, 0);
+    
+    // ML per hour (if duration > 0)
+    const mlPerHour = durationHours > 0 ? totalMl / durationHours : totalMl;
+    
+    // ML per intake
+    const mlPerIntake = totalMl / sortedDosages.length;
+    
+    // ML per 24 hours (extrapolated if session < 24h)
+    const mlPer24Hours = durationHours > 0 ? (totalMl / durationHours) * 24 : 0;
+    
+    return {
+      firstIntakeTimestamp: firstIntakeTime.getTime(),
+      lastIntakeTimestamp: lastIntakeTime.getTime(),
+      durationHours,
+      totalMl,
+      mlPerHour,
+      mlPerIntake,
+      mlPer24Hours,
+      dosageCount: sortedDosages.length
+    };
+  };
+
   // Add a new dosage for the current user
   const addDosage = (amount: number, note?: string, minutesAgo?: number) => {
+    const timestamp = minutesAgo ? Date.now() - (minutesAgo * 60 * 1000) : Date.now();
+    
     const newDosage: Dosage = {
       id: uuidv4(),
-      timestamp: minutesAgo ? Date.now() - (minutesAgo * 60 * 1000) : Date.now(),
+      timestamp,
       amount,
       note,
     };
+    
+    // If no active session, create a new one
+    if (!currentUserData.currentSession) {
+      const newSession: Session = {
+        id: uuidv4(),
+        startTimestamp: timestamp,
+        dosages: [newDosage],
+        ...calculateSessionStats([newDosage])
+      };
+      
+      updateUserData({
+        currentSession: newSession,
+        sessions: [...(currentUserData.sessions || []), newSession]
+      });
+    } else {
+      // Add to existing session
+      const updatedDosages = [...(currentUserData.currentSession.dosages || []), newDosage];
+      const updatedSessionStats = calculateSessionStats(updatedDosages);
+      
+      const updatedSession = {
+        ...currentUserData.currentSession,
+        dosages: updatedDosages,
+        ...updatedSessionStats
+      };
+      
+      // Update session in the sessions array
+      const updatedSessions = currentUserData.sessions.map(session => 
+        session.id === updatedSession.id ? updatedSession : session
+      );
+      
+      updateUserData({
+        currentSession: updatedSession,
+        sessions: updatedSessions
+      });
+    }
     
     const updatedDosages = [newDosage, ...(currentUserData.dosages || [])];
     updateUserData({ dosages: updatedDosages });
@@ -227,7 +320,26 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       riskLevel: 'safe',
       totalConsumed: 0,
       lastDosage: null,
-      safeTimeReached: false
+      safeTimeReached: false,
+      sessions: [],
+      currentSession: null
+    });
+  };
+
+  // Start a new session without removing history
+  const startNewSession = () => {
+    // Keep history but reset current session
+    updateUserData({
+      activeSession: false,
+      timeRemaining: 0,
+      riskLevel: 'safe',
+      safeTimeReached: false,
+      currentSession: null
+    });
+    
+    toast({
+      title: "New G-session Started",
+      description: "Previous session history is preserved.",
     });
   };
 
@@ -244,12 +356,15 @@ export const DosageProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     settings,
     addDosage,
     resetSession,
+    startNewSession,
     updateSettings,
     activeSession: currentUserData.activeSession || false,
     lastDosage: currentUserData.lastDosage,
     timeRemaining: currentUserData.timeRemaining || 0,
     riskLevel: currentUserData.riskLevel || 'safe',
-    totalConsumed: currentUserData.totalConsumed || 0
+    totalConsumed: currentUserData.totalConsumed || 0,
+    sessions: currentUserData.sessions || [],
+    currentSession: currentUserData.currentSession
   };
 
   return (

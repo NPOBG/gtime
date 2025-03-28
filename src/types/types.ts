@@ -8,6 +8,20 @@ export interface Dosage {
   note?: string;
 }
 
+export interface Session {
+  id: string;
+  startTimestamp: number;
+  firstIntakeTimestamp?: number;
+  lastIntakeTimestamp?: number;
+  durationHours?: number;
+  totalMl?: number;
+  mlPerHour?: number;
+  mlPerIntake?: number;
+  mlPer24Hours?: number;
+  dosageCount?: number;
+  dosages: Dosage[];
+}
+
 export interface AppSettings {
   safeInterval: number; // in minutes
   warningInterval: number; // in minutes
@@ -24,6 +38,8 @@ export interface UserDosageData {
   totalConsumed: number;
   lastDosage: Dosage | null;
   safeTimeReached: boolean;
+  sessions: Session[];
+  currentSession: Session | null;
 }
 
 export interface DosageContextType {
@@ -31,10 +47,13 @@ export interface DosageContextType {
   settings: AppSettings;
   addDosage: (amount: number, note?: string, minutesAgo?: number) => void;
   resetSession: () => void;
+  startNewSession: () => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   activeSession: boolean;
   lastDosage: Dosage | null;
   timeRemaining: number; // in milliseconds
   riskLevel: RiskLevel;
   totalConsumed: number; // in ml
+  sessions: Session[];
+  currentSession: Session | null;
 }
