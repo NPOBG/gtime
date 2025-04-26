@@ -1,0 +1,67 @@
+
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "g time",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "StatusIntent",
+          "slots": [],
+          "samples": [
+            "check my status",
+            "what is my status",
+            "how am I doing",
+            "am I safe to take more",
+            "is it g time yet",
+            "can I take more",
+            "check if it's safe"
+          ]
+        },
+        {
+          "name": "AddDosageIntent",
+          "slots": [
+            {
+              "name": "amount",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "log a new dose",
+            "record a dose",
+            "add a dose",
+            "I took a dose",
+            "log {amount} ml",
+            "record {amount} ml",
+            "add {amount} ml",
+            "I took {amount} ml"
+          ]
+        },
+        {
+          "name": "SessionInfoIntent",
+          "slots": [],
+          "samples": [
+            "get session info",
+            "session information",
+            "how is my session",
+            "session details",
+            "tell me about my session",
+            "current session"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}
